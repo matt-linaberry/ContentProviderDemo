@@ -1,20 +1,28 @@
 package edu.self.contentproviderdemo;
 
+import android.Manifest;
 import android.content.ContentResolver;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private ListView contactNames;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        contactNames = (ListView) findViewById(R.id.contact_names);
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -29,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 ContentResolver cr = getContentResolver();
                 // get the services
-                Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, new String[] {ContactsContract.Contacts.DISPLAY_NAME}, null, null, null);
+                Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, new String[]{ContactsContract.Contacts.DISPLAY_NAME}, null, null, null);
                 // go to the contacts database, return the display name.
                 List<String> contacts = new ArrayList<String>();
                 if (cursor.moveToFirst()) {
@@ -37,8 +47,23 @@ public class MainActivity extends AppCompatActivity {
                         contacts.add(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)));
                     } while (cursor.moveToNext());
                 }
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<String>(getBaseContext(), R.layout.contact_detail, R.id.name, contacts);
+                contactNames.setAdapter(adapter);
             }
         });
+
+        // dynamically ask permissions!
+        final int REQUEST_CODE_ASK_PERMISSIONS = 123;
+        int hasReadContactsPermission = ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.READ_CONTACTS);
+        if (hasReadContactsPermission != PackageManager.PERMISSION_GRANTED) {
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, android.Manifest.permission.READ_CONTACTS)) {
+                ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_CONTACTS}, REQUEST_CODE_ASK_PERMISSIONS);
+                return;
+            }
+        }
+
+        ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_CONTACTS}, REQUEST_CODE_ASK_PERMISSIONS);
     }
 
     @Override
